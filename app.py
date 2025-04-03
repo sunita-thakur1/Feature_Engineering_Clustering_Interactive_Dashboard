@@ -7,9 +7,9 @@ from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering
 from sklearn.metrics import silhouette_score, davies_bouldin_score
 
 # Load data
-#df = pd.read_csv("recommendation_model_updated_v4.csv")
+df = pd.read_csv("recommendation_model_updated_v4.csv")
 # Streamlit UI for file upload
-uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
+#uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
 
 # Encode categorical variables
 categorical_cols = ["user_cuisine", "sex", "taste"]

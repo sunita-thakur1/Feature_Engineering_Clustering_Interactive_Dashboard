@@ -22,7 +22,7 @@ df["Donation_per_Minute"] = df["Donations ($)"] / (df["Time_Spent (min)"] + 1)
 
 # Select features for clustering
 features = [
-     "Likes", "Dislikes", "Donations ($)", "Time_Spent (min)",
+     "Model_Used", "Likes", "Dislikes", "Donations ($)", "Time_Spent (min)",
     "Conversion_Rate (%)", "Recommendation_Accuracy (%)", "Engagement_(min/session)",
     "user_age", "user_cuisine", "sex", "taste", "Engagement_per_Like", "Donation_per_Minute"
 ]

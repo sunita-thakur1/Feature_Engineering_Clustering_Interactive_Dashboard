@@ -18,6 +18,15 @@ if uploaded_file is not None:
     st.write("### Preview of Data:")
     st.write(df.head())
     st.write(df.groupby("Model_Used").agg({'sex': 'count',  'user_age': 'mean', 'user_cuisine': 'count', 'user_cuisine':'count', 'taste': 'count', 'Conversion_Rate (%)': 'mean', 'Likes': 'count' }))
+    # Group by "Model_Used" and calculate the mean of "Conversion_Rate (%)"
+    st. write(conversion_rate_summary = df.groupby("Model_Used")['Conversion_Rate (%)'].mean())
+
+# Find the model with the maximum conversion rate
+    st.write(max_conversion_model = conversion_rate_summary.idxmax())
+    st.write(max_conversion_value = conversion_rate_summary.max())
+
+# Output the result
+    st.write(print(f"The model with the highest Conversion Rate is Model: {max_conversion_model}, with a Conversion Rate of: {max_conversion_value:.2f}%"))
     # Encode categorical variables
     categorical_cols = ["user_cuisine", "sex", "taste"]
     for col in categorical_cols:

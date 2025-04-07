@@ -15,6 +15,7 @@ uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
 if uploaded_file is not None:
     # Load the uploaded data
     df = pd.read_csv(uploaded_file)
+    st.df(head)
 
     # Encode categorical variables
     categorical_cols = ["user_cuisine", "sex", "taste"]

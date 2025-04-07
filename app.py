@@ -17,6 +17,7 @@ if uploaded_file is not None:
     df = pd.read_csv(uploaded_file)
     st.write("### Preview of Data:")
     st.write(df.head())
+    st.write(df.groupby("Model_Used").agg({'sex': 'count',  'user_age': 'mean', 'user_cuisine': 'count', 'user_cuisine':'count', 'taste': 'count', 'Conversion_Rate (%)': 'mean', 'Likes': 'count' }))
     # Encode categorical variables
     categorical_cols = ["user_cuisine", "sex", "taste"]
     for col in categorical_cols:

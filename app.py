@@ -26,7 +26,7 @@ if uploaded_file is not None:
     max_conversion_value = conversion_rate_summary.max()
 
    # Output the result using Streamlit's st.write
-    st.write(f"The model with the highest Conversion Rate is Model {max_conversion_model} with a Conversion Rate of {max_conversion_value:.2f}%")
+    st.write(f"The model with the highest Conversion Rate is Model: {max_conversion_model}, with a Conversion Rate of: {max_conversion_value:.2f}%")
 
     # Encode categorical variables
     categorical_cols = ["user_cuisine", "sex", "taste"]

@@ -33,7 +33,6 @@ if uploaded_file:
     })
     st.dataframe(grouped_stats)
 
-    # Best performing model
     conversion_rate_summary = df.groupby("Model_Used")['Conversion_Rate (%)'].mean()
     max_model = conversion_rate_summary.idxmax()
     max_value = conversion_rate_summary.max()
@@ -45,33 +44,35 @@ if uploaded_file:
         if col in df.columns:
             df[col] = LabelEncoder().fit_transform(df[col])
 
-    # Create derived features
+    # Add derived features
     df["Engagement_per_Like"] = df["Engagement_(min/session)"] / (df["Likes"] + 1)
     df["Donation_per_Minute"] = df["Donations ($)"] / (df["Time_Spent (min)"] + 1)
 
-    # Feature selection
-    features = [
-        "Model_Used", "Likes", "Dislikes", "Donations ($)", "Time_Spent (min)",
-        "Conversion_Rate (%)", "Recommendation_Accuracy (%)", "Engagement_(min/session)",
-        "user_age", "user_cuisine", "sex", "taste", "Engagement_per_Like", "Donation_per_Minute"
-    ]
+    # --- Feature Selection ---
+    all_features = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
+    selected_features = st.multiselect("🔧 Select features for clustering", all_features, default=all_features[:5])
 
-    # Scale features
+    if len(selected_features) < 2:
+        st.warning("Please select at least two features for clustering.")
+        st.stop()
+
+    # --- Standardize ---
     scaler = StandardScaler()
-    df_scaled = pd.DataFrame(scaler.fit_transform(df[features]), columns=features)
+    df_scaled = pd.DataFrame(scaler.fit_transform(df[selected_features]), columns=selected_features)
 
-    # Clustering
-    optimal_k = 4
-    kmeans = KMeans(n_clusters=optimal_k, random_state=42, n_init=10)
-    df["KMeans_Cluster"] = kmeans.fit_predict(df_scaled)
+    # --- Sidebar Parameters ---
+    st.sidebar.header("🔀 Clustering Options")
+    n_clusters = st.sidebar.slider("Number of Clusters (KMeans & Hierarchical)", 2, 10, 4)
+    dbscan_eps = st.sidebar.slider("DBSCAN: eps (neighborhood radius)", 0.1, 10.0, 1.5)
+    dbscan_min_samples = st.sidebar.slider("DBSCAN: min_samples", 1, 10, 5)
+    cluster_method = st.sidebar.selectbox("Clustering Method", ["KMeans", "DBSCAN", "Hierarchical"])
 
-    dbscan = DBSCAN(eps=1.5, min_samples=5)
-    df["DBSCAN_Cluster"] = dbscan.fit_predict(df_scaled)
+    # --- Clustering ---
+    df["KMeans_Cluster"] = KMeans(n_clusters=n_clusters, random_state=42, n_init=10).fit_predict(df_scaled)
+    df["DBSCAN_Cluster"] = DBSCAN(eps=dbscan_eps, min_samples=dbscan_min_samples).fit_predict(df_scaled)
+    df["Hierarchical_Cluster"] = AgglomerativeClustering(n_clusters=n_clusters).fit_predict(df_scaled)
 
-    hierarchical = AgglomerativeClustering(n_clusters=optimal_k)
-    df["Hierarchical_Cluster"] = hierarchical.fit_predict(df_scaled)
-
-    # Evaluation Metrics
+    # --- Evaluation Scores ---
     scores = {}
     method_map = {
         "KMeans": "KMeans_Cluster",
@@ -79,51 +80,46 @@ if uploaded_file:
         "Hierarchical": "Hierarchical_Cluster"
     }
 
-    for method, cluster_col in method_map.items():
-        labels = df[cluster_col]
+    for method, col in method_map.items():
+        labels = df[col]
         if len(set(labels)) > 1:
-            silhouette = silhouette_score(df_scaled, labels)
-            bouldin = davies_bouldin_score(df_scaled, labels)
             scores[method] = {
-                "Silhouette Score": round(silhouette, 3),
-                "Davies-Bouldin Score": round(bouldin, 3)
+                "Silhouette Score": round(silhouette_score(df_scaled, labels), 3),
+                "Davies-Bouldin Score": round(davies_bouldin_score(df_scaled, labels), 3)
             }
         else:
             scores[method] = "Not enough clusters for evaluation"
 
-    # Sidebar
-    st.sidebar.header("🔀 Cluster Selection")
-    cluster_type = st.sidebar.selectbox("Choose Clustering Method", list(method_map.keys()))
-
-    # Show cluster counts
+    # --- Cluster Counts ---
     st.subheader("📦 Cluster Distribution")
-    st.dataframe(df[method_map[cluster_type]].value_counts().rename_axis("Cluster").reset_index(name="Count"))
+    cluster_counts = df[method_map[cluster_method]].value_counts().sort_index()
+    st.dataframe(cluster_counts.rename_axis("Cluster").reset_index(name="Count"))
 
-    # Show scores
+    # --- Cluster Metrics ---
     st.subheader("📐 Clustering Evaluation Metrics")
-    if isinstance(scores[cluster_type], dict):
-        st.json(scores[cluster_type])
+    if isinstance(scores[cluster_method], dict):
+        st.json(scores[cluster_method])
     else:
-        st.warning(scores[cluster_type])
+        st.warning(scores[cluster_method])
 
-    # Scatter Plot
-    st.subheader(f"📍 {cluster_type} Cluster Visualization")
+    # --- Visualization ---
+    st.subheader("📍 Cluster Visualization (2D Projection)")
     fig, ax = plt.subplots()
     sns.scatterplot(
-        x=df_scaled.iloc[:, 0],
-        y=df_scaled.iloc[:, 1],
-        hue=df[method_map[cluster_type]],
-        palette="Set2",
+        x=df_scaled[selected_features[0]],
+        y=df_scaled[selected_features[1]],
+        hue=df[method_map[cluster_method]],
+        palette="tab10",
         ax=ax
     )
-    ax.set_xlabel(features[0])
-    ax.set_ylabel(features[1])
-    ax.set_title(f"{cluster_type} Clustering")
+    ax.set_xlabel(selected_features[0])
+    ax.set_ylabel(selected_features[1])
+    ax.set_title(f"{cluster_method} Clustering")
     st.pyplot(fig)
 
-    # Optional: Show processed DataFrame
-    st.subheader("🧾 Full Data (with cluster labels)")
-    st.dataframe(df)
+    # --- Optional: Show processed data ---
+    st.subheader("🧾 Data with Cluster Labels")
+    st.dataframe(df.head())
 
 else:
     st.info("📁 Please upload a CSV file to begin.")
